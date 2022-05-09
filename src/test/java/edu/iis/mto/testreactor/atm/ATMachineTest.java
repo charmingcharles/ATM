@@ -1,19 +1,27 @@
 package edu.iis.mto.testreactor.atm;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import org.hamcrest.Matchers;
+import edu.iis.mto.testreactor.atm.bank.Bank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class ATMachineTest {
 
+    ATMachine ATM;
+
+    @Mock
+    Bank bank;
+
     @BeforeEach
-    void setUp() throws Exception {}
+    void setUp() {
+        bank = Mockito.mock(Bank.class);
+        ATM = new ATMachine(bank, Money.DEFAULT_CURRENCY);
+    }
 
     @Test
     void itCompiles() {
-        assertThat(true, Matchers.equalTo(true));
+
     }
 
 }
