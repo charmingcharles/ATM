@@ -6,7 +6,9 @@ import edu.iis.mto.testreactor.atm.bank.AuthorizationToken;
 import edu.iis.mto.testreactor.atm.bank.Bank;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
@@ -185,6 +187,26 @@ class ATMachineTest {
 
         ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, plnGenerate("100")));
         Assertions.assertEquals(ErrorCode.AHTHORIZATION, exception.getErrorCode());
+    }
+
+    @Test
+    void behaviourTest() throws AuthorizationException, ATMOperationException, AccountException {
+        Mockito.when(bank.authorize(pinCode.getPIN(), card.getNumber())).thenReturn(authorizationToken);
+
+        banknotes.add(BanknotesPack.create(10, Banknote.PL_10));
+        MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, banknotes);
+        ATM.setDeposit(moneyDeposit);
+
+        List<BanknotesPack> expectedWithdrawalBanknotes = new ArrayList<>();
+        expectedWithdrawalBanknotes.add(BanknotesPack.create(1, Banknote.PL_10));
+
+        Withdrawal expectedWithdrawal = Withdrawal.create(expectedWithdrawalBanknotes);
+        Withdrawal actualWithdrawal = ATM.withdraw(pinCode, card, plnGenerate("10"));
+        Assertions.assertEquals(expectedWithdrawal, actualWithdrawal);
+
+        InOrder order = Mockito.inOrder(bank);
+        order.verify(bank).authorize(pinCode.getPIN(), card.getNumber());
+        order.verify(bank).charge(authorizationToken, plnGenerate("10"));
     }
 
 }
