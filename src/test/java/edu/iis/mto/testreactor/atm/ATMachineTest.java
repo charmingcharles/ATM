@@ -1,5 +1,6 @@
 package edu.iis.mto.testreactor.atm;
 
+import edu.iis.mto.testreactor.atm.bank.AccountException;
 import edu.iis.mto.testreactor.atm.bank.AuthorizationException;
 import edu.iis.mto.testreactor.atm.bank.AuthorizationToken;
 import edu.iis.mto.testreactor.atm.bank.Bank;
@@ -120,7 +121,7 @@ class ATMachineTest {
 
     @Test
     void throwAuthorizationExceptionTest() throws AuthorizationException {
-        Mockito.when(bank.authorize(pinCode.getPIN(), card.getNumber())).thenThrow(AuthorizationException.class);
+        Mockito.when(bank.authorize(pinCode.getPIN(), card.getNumber())).thenReturn(authorizationToken);
 
         List<Banknote> list = Banknote.getDescFor(Money.DEFAULT_CURRENCY);
         for(Banknote b : list){
@@ -129,8 +130,26 @@ class ATMachineTest {
         MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, banknotes);
         ATM.setDeposit(moneyDeposit);
 
-        ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, plnGenerate("330")));
-        Assertions.assertEquals(ErrorCode.AHTHORIZATION, exception.getErrorCode());
+        ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, plnGenerate("3300")));
+        Assertions.assertEquals(ErrorCode.WRONG_AMOUNT, exception.getErrorCode());
+    }
+
+    @Test
+    void throwAccountExceptionTest() throws AuthorizationException, AccountException {
+        Money money = plnGenerate("100");
+
+        Mockito.when(bank.authorize(pinCode.getPIN(), card.getNumber())).thenReturn(authorizationToken);
+        Mockito.doThrow(AccountException.class).when(bank).charge(authorizationToken, money);
+
+        List<Banknote> list = Banknote.getDescFor(Money.DEFAULT_CURRENCY);
+        for(Banknote b : list){
+            banknotes.add(BanknotesPack.create(1, b));
+        }
+        MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, banknotes);
+        ATM.setDeposit(moneyDeposit);
+
+        ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, money));
+        Assertions.assertEquals(ErrorCode.NO_FUNDS_ON_ACCOUNT, exception.getErrorCode());
     }
 
 }
