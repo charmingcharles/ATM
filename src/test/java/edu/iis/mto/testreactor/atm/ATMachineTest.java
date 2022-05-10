@@ -10,10 +10,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
-import java.lang.management.PlatformLoggingMXBean;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Currency;
 import java.util.List;
 
 class ATMachineTest {
@@ -135,6 +135,21 @@ class ATMachineTest {
     }
 
     @Test
+    void throwATMExceptionTest() {
+        Money money = plnGenerate("100");
+
+        List<Banknote> list = Banknote.getDescFor(Money.DEFAULT_CURRENCY);
+        for(Banknote b : list){
+            banknotes.add(BanknotesPack.create(1, b));
+        }
+        MoneyDeposit moneyDeposit = MoneyDeposit.create(Currency.getInstance("USD"), banknotes);
+        ATM.setDeposit(moneyDeposit);
+
+        ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, money));
+        Assertions.assertEquals(ErrorCode.WRONG_CURRENCY, exception.getErrorCode());
+    }
+
+    @Test
     void throwAccountExceptionTest() throws AuthorizationException, AccountException {
         Money money = plnGenerate("100");
 
@@ -150,6 +165,26 @@ class ATMachineTest {
 
         ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, money));
         Assertions.assertEquals(ErrorCode.NO_FUNDS_ON_ACCOUNT, exception.getErrorCode());
+    }
+
+    @Test
+    void authorizationTest() throws AuthorizationException {
+        Mockito.doThrow(AuthorizationException.class).when(bank).authorize(pinCode.getPIN(), card.getNumber());
+
+        List<Banknote> list = Banknote.getDescFor(Money.DEFAULT_CURRENCY);
+        for(Banknote b : list){
+            banknotes.add(BanknotesPack.create(2, b));
+        }
+        MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, banknotes);
+        ATM.setDeposit(moneyDeposit);
+
+        List<BanknotesPack> expectedWithdrawalBanknotes = new ArrayList<>();
+        for(Banknote b : list){
+            expectedWithdrawalBanknotes.add(BanknotesPack.create(1, b));
+        }
+
+        ATMOperationException exception = Assertions.assertThrows(ATMOperationException.class, () -> ATM.withdraw(pinCode, card, plnGenerate("100")));
+        Assertions.assertEquals(ErrorCode.AHTHORIZATION, exception.getErrorCode());
     }
 
 }
