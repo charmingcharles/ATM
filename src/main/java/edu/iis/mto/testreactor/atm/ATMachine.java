@@ -76,14 +76,10 @@ public class ATMachine {
         List<BanknotesPack> result = new ArrayList<>();
         List<Banknote> allBanknotesForCurrency = Banknote.getDescFor(amount.getCurrency());
 
-        System.out.println(allBanknotesForCurrency);
-
         for (Banknote banknote : allBanknotesForCurrency) {
             int denomination = banknote.getDenomination();
             int requiredBanknotesCount = valueToWithdraw / denomination;
             valueToWithdraw = valueToWithdraw % banknote.getDenomination();
-
-            System.out.println(requiredBanknotesCount + " " + valueToWithdraw);
 
             if (requiredBanknotesCount > 0) {
                 int availableCount = deposit.getAvailableCountOf(banknote);

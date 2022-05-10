@@ -14,25 +14,28 @@ import java.util.List;
 
 class ATMachineTest {
 
-    ATMachine ATM;
-
     @Mock
     Bank bank;
+
+    ATMachine ATM;
+    List<BanknotesPack> banknotes;
+
+    final PinCode pinCode = PinCode.createPIN(1, 2, 3, 4);
+    final Card card = Card.create("123");
 
     @BeforeEach
     void setUp() {
         bank = Mockito.mock(Bank.class);
         ATM = new ATMachine(bank, Money.DEFAULT_CURRENCY);
-        List<BanknotesPack> list = new ArrayList<>();
-        list.add(BanknotesPack.create(10, Banknote.PL_10));
-        MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, list);
-        ATM.setDeposit(moneyDeposit);
+        banknotes = new ArrayList<>();
     }
 
     @Test
     void withdrawSomeCashTest() throws ATMOperationException, AuthorizationException {
-        PinCode pinCode = PinCode.createPIN(1, 2, 3, 4);
-        Card card = Card.create("123");
+        banknotes.add(BanknotesPack.create(10, Banknote.PL_10));
+        MoneyDeposit moneyDeposit = MoneyDeposit.create(Money.DEFAULT_CURRENCY, banknotes);
+        ATM.setDeposit(moneyDeposit);
+
         Mockito.when(bank.authorize(pinCode.getPIN(), card.getNumber())).thenReturn(AuthorizationToken.create("12345"));
         ATM.withdraw(pinCode, card, new Money(new BigDecimal(10), Money.DEFAULT_CURRENCY));
     }
